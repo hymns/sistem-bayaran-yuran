@@ -1,0 +1,1057 @@
+{
+  "info": {
+    "name": "Sistem Bayaran Yuran",
+    "description": "Semua laluan dari setiap cawangan. Setiap request menyatakan cawangan pertama ia wujud:\n\n| Cawangan | Laluan baharu |\n|---|---|\n| master, modul-1-start | `POST /payments`, `GET /payments/{id}` (web) |\n| modul-2-start | `GET /bursary/payments` |\n| modul-2-lab | `GET /bursary/overdue` |\n| modul-3-start | `GET /api/user` (default Laravel) |\n| modul-3-lab | API v1 + v2, tokens, Passport, `/login` |\n| modul-4-start | `POST /api/v1/reports/collections/exports` |\n| modul-5-start | (tiada laluan baharu, tambah channels) |\n| modul-6-start, selesai | receipts, payments-today, header `X-Request-Id` |\n\nMula: jalankan folder **0. Auth** untuk isi token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{student_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "password",
+      "value": "rahsia123"
+    },
+    {
+      "key": "student_email",
+      "value": "aisyah@graduate.utm.my"
+    },
+    {
+      "key": "student2_email",
+      "value": "badrul@graduate.utm.my"
+    },
+    {
+      "key": "bursary_email",
+      "value": "siti@utm.my"
+    },
+    {
+      "key": "invoice_id",
+      "value": "6"
+    },
+    {
+      "key": "payment_id",
+      "value": "1"
+    },
+    {
+      "key": "date",
+      "value": "2026-09-20"
+    },
+    {
+      "key": "partner_client_id",
+      "value": ""
+    },
+    {
+      "key": "partner_client_secret",
+      "value": ""
+    },
+    {
+      "key": "student_token",
+      "value": ""
+    },
+    {
+      "key": "student2_token",
+      "value": ""
+    },
+    {
+      "key": "bursary_token",
+      "value": ""
+    },
+    {
+      "key": "partner_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Auth",
+      "description": "Dapatkan token dahulu. Semua kata laluan seeder: `rahsia123`.\n\n- Pelajar: aisyah@graduate.utm.my, badrul@graduate.utm.my → ability `invoices:read`, `payments:create`\n- Bendahari: siti@utm.my → ability `invoices:read`, `reports:read`",
+      "item": [
+        {
+          "name": "Token pelajar (Aisyah)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/tokens",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tokens"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nSimpan token ke `{{student_token}}`. Throttle `login`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{password}}\",\n  \"device_name\": \"postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('student_token', j.token);",
+                  "  console.log('abilities:', j.abilities);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token pelajar (Badrul)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/tokens",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tokens"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nSimpan token ke `{{student2_token}}`. Guna untuk uji IDOR (invois 6 milik Aisyah).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student2_email}}\",\n  \"password\": \"{{password}}\",\n  \"device_name\": \"postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('student2_token', j.token);",
+                  "  console.log('abilities:', j.abilities);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token Bendahari (Puan Siti)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/tokens",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tokens"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nSimpan token ke `{{bursary_token}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bursary_email}}\",\n  \"password\": \"{{password}}\",\n  \"device_name\": \"postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('bursary_token', j.token);",
+                  "  console.log('abilities:', j.abilities);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Batal token semasa",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/tokens/current",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tokens",
+                "current"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nPulang 204.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Passport client credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/oauth/token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nCipta client dahulu: `php artisan passport:client --client`, isi `{{partner_client_id}}` dan `{{partner_client_secret}}`.\nSimpan token ke `{{partner_token}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"client_credentials\",\n  \"client_id\": \"{{partner_client_id}}\",\n  \"client_secret\": \"{{partner_client_secret}}\",\n  \"scope\": \"payments:read\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('partner_token', pm.response.json().access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. API v1 — Pelajar",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{student_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Senarai invois tertunggak",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nAbility `invoices:read`. Paginate 10."
+          }
+        },
+        {
+          "name": "Papar invois",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "invoices",
+                "{{invoice_id}}"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nAbility `invoices:read`. Policy `view`: invois mesti milik pelajar."
+          }
+        },
+        {
+          "name": "Papar invois (IDOR — Badrul baca invois Aisyah)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices/6",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "invoices",
+                "6"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nJangka 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student2_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bayar invois",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nAbility `payments:create`, throttle `payments`. `method`: fpx | card | ewallet | counter. Pulang 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoice_id\": \"{{invoice_id}}\",\n  \"method\": \"fpx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Kemas kini profil",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "profile"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nHanya `name` diterima (max 100).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aisyah Binti Ahmad\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Resit bayaran",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/receipts/{{payment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "receipts",
+                "{{payment_id}}"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-6-start`\n\nPolicy `view` pada invois bayaran."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. API v1 — Bendahari",
+      "description": "Gate `view-bursary-reports` (role `bursary`).",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{bursary_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Kutipan hari ini",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/collections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "collections"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nPada `selesai`, hari dikira ikut Asia/Kuala_Lumpur."
+          }
+        },
+        {
+          "name": "Cari invois ikut nombor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/search/invoices?number=INV0000007",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "number",
+                  "value": "INV0000007"
+                }
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\n`number` mesti padan `INV` + 7 digit."
+          }
+        },
+        {
+          "name": "Eksport laporan kutipan (queue)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/collections/exports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "collections",
+                "exports"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-4-start`\n\nDispatch job ke queue `reports`. Pulang 202.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Bayaran hari ini",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/payments-today",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "payments-today"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-6-start`"
+          }
+        },
+        {
+          "name": "Kutipan hari ini (pelajar — jangka 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/collections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "collections"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. API v1 — Rakan (Passport)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{partner_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Bayaran harian",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/partner/payments?date={{date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "partner",
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{date}}"
+                }
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nClient credentials dengan scope `payments:read`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. API v2",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{student_token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Papar invois (v2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/invoices/{{invoice_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "invoices",
+                "{{invoice_id}}"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nBentuk resource V2."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Lain-lain",
+      "item": [
+        {
+          "name": "Pengguna semasa (default)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-start`\n\nHanya wujud pada `modul-3-start` (dibuang dalam modul-3-lab)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Web (sesi + CSRF)",
+      "description": "Laluan web guna sesi dan cookie. Jalankan **CSRF cookie** dahulu, kemudian **Log masuk**. Pre-request script folder ini salin cookie `XSRF-TOKEN` ke header `X-XSRF-TOKEN`.\n\nPada `master` hingga `modul-3-start` tiada laluan `/login` — log masuk melalui cara lain atau langkau.",
+      "auth": {
+        "type": "noauth"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const raw = pm.cookies.get('XSRF-TOKEN');",
+              "if (raw) {",
+              "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: decodeURIComponent(raw) });",
+              "}",
+              "pm.request.headers.upsert({ key: 'Origin', value: pm.collectionVariables.get('base_url') });",
+              "pm.request.headers.upsert({ key: 'Referer', value: pm.collectionVariables.get('base_url') + '/' });"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "CSRF cookie",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sanctum/csrf-cookie",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sanctum",
+                "csrf-cookie"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nSet cookie `XSRF-TOKEN` dan sesi. Pulang 204."
+          }
+        },
+        {
+          "name": "Log masuk (SPA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Senarai invois (sesi SPA)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "invoices"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-3-lab`\n\nSama seperti API v1 tetapi disahkan melalui cookie sesi (EnsureFrontendRequestsAreStateful)."
+          }
+        },
+        {
+          "name": "Bayar invois (borang)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `master`\n\nLaluan asal. Pada `master`, `method`: fpx | card | ewallet. Redirect ke `/payments/{id}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoice_id\": \"{{invoice_id}}\",\n  \"method\": \"fpx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Papar bayaran",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payments/{{payment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "{{payment_id}}"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `master`\n\nPulang HTML."
+          }
+        },
+        {
+          "name": "Bendahari: 50 bayaran terkini",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bursary/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bursary",
+                "payments"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-2-start`\n\nPulang HTML. Tiada kawalan akses (ditambah dalam Modul 3)."
+          }
+        },
+        {
+          "name": "Bendahari: invois lewat",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bursary/overdue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bursary",
+                "overdue"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `modul-2-lab`\n\nPulang HTML."
+          }
+        },
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/up",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "up"
+              ]
+            },
+            "description": "**Ada sejak cawangan:** `master`"
+          }
+        }
+      ]
+    }
+  ]
+}
